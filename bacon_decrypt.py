@@ -41,21 +41,19 @@ def decrypt(alphabet, text):
             iter += 9
         elif text[iter] in alphabet.keys():
             bin += '0'
+            iter += 1
+        else:
+            iter +=1
 
-        iter += 1
 
     # Inverting the alphabet
     alphabet_inverse = {v: k for k, v in alphabet.items()}
 
-    print(bin)
-    print(alphabet_inverse)
     for bit in bin:
         substr += bit
         if substr in alphabet_inverse:
             msg += alphabet_inverse[substr]
             substr = ''
-
-    print(msg)
 
     return msg, bin
 
@@ -69,6 +67,3 @@ else:
     file = open(args.output, 'w')
     file.write( msg + '\n')
     file.close()
-
-print(text)
-print(bin)

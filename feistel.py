@@ -1,3 +1,6 @@
+import argparse
+
+
 ALPHABET = {
     "A": "00000",
     "B": "00001",
@@ -107,7 +110,7 @@ def feistel_round_decrypt(left: bytes, right: bytes, key:str) -> bytes:
     return lip, rip
 
 def apply_padding(data: bytes, block_size: int) -> bytes:
-    # PCKS
+    # PCKS 7
     padding_length = block_size - (len(data) % block_size)
     padding = bytes([padding_length] * padding_length)
     return  data + padding
@@ -151,24 +154,48 @@ def feistel_decrypt(message: bytes, key:str , rounds:int = 16, block_size: int =
     text = res.decode()
     return text
 
+def read_from_file_or_value(value):
+    """ Returns value if file does not exist"""
+    read_mode = 'r'
+    try:
+        with open(value, read_mode) as file:
+            return file.read().strip()
+    except FileNotFoundError:
+        return value
 
+parser = argparse.ArgumentParser(description="Encrypt or Decrypt a message using Bacon, Vigenere and Autokey, providing a key and a secret message")
+parser.add_argument("--key", required=True, help="Encryption/Decryption key for Vigenere and Autokey, can be a value or a path to a file")
+parser.add_argument("--secret", required=True, help="Secret to be combined with the key for Bacon chipher, can be the value or a path to a file")
+parser.add_argument("--message", required=True, help="Path to file that contains the message")
+parser.add_argument("--mode", required=True, choices=['e', 'd'], help="Modes: 'e' for encryption, 'd' for decryption")
 
+args = parser.parse_args()
 
-message = "0123456789012345"
+mode = args.mode
 
-key = "CHAVE GIGANTESCA QUE PODE TRAVAR E BUGGAR TODO O UNIVERSO"
+key = read_from_file_or_value(args.key)
+secret = read_from_file_or_value(args.secret)
 
-segredo = "TEXTO SECRETO ARMAGEDOM QUE VAI TRAVAR O SEU ALGORITMO E TE FAZER CHORAR!"
+#Read binary with mode is 'd' (decryption)
+message = read_from_file_or_value(args.message)
 
+#Generate autokey (don't want to change at each itaration of the feistel chain)
 autokey_key = key + message[len(key):]
 
-key = (key, autokey_key, segredo)
+# Compose the key into a tuple for easier access
+key = (key, autokey_key, secret)
 
-encrypted = feistel_encrypt(message, key)
-print("Encrypted:", encrypted)
 
-decrypted = feistel_decrypt(encrypted, key)
-print("Decrypted:",decrypted)
+if mode == 'e':
+    encrypted = feistel_encrypt(message, key)
+    print(encrypted.hex())
+
+elif mode == 'd':
+    decrypted = feistel_decrypt(bytearray.fromhex(message), key)
+    print(decrypted)
+
+
+# Testings
 
 #print(vigenere_decrypt(cript, "SEG"))
 

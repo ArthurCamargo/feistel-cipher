@@ -1,4 +1,7 @@
+# Bacon's cypher is an stenography method that utilizes 2 typefaces or different
+# types of fonts
 
+# TODO: check if file exists else exit 1
 
 import argparse
 
@@ -77,6 +80,3 @@ else:
     file = open(args.output, 'w')
     file.write( encoded + '\n')
     file.close()
-
-print(text)
-print(bin)

@@ -1,6 +1,5 @@
 import argparse
 
-
 ALPHABET = {
     "A": "00000",
     "B": "00001",
@@ -43,7 +42,7 @@ def bacon(plaintext: bytes, key: str, alphabet: dict) -> bytes:
     # Translate the key to an binarray
     for i in range(len(key)):
         if(key[i] in alphabet.keys()):
-            value = int(alphabet[key[i]], 2).to_bytes()
+            value = int(alphabet[key[i]], 2).to_bytes(1 , byteorder='big')
             bin_array += value
 
     for i in range(len(plaintext)):
@@ -61,10 +60,11 @@ def bacon(plaintext: bytes, key: str, alphabet: dict) -> bytes:
 
 def autokey (plaintext: bytes, key: str) -> bytes:
     # Autokey simple (receives 'auto' key)
+    autokey_key = bytearray(key, 'utf-8') + plaintext[len(key):]
     ciphertext = bytearray()
 
     for i in range(len(plaintext)):
-        value = (plaintext[i] + ord(key[i])) % 256
+        value = (plaintext[i] + autokey_key[i]) % 256
         ciphertext.append(value)
 
     return ciphertext
@@ -82,7 +82,7 @@ def vigenere(plaintext: bytes, key: str) -> bytes:
 
 def encryption(plaintext, key):
     # 3 types of keys, key for vigenere, key for autokey, key for bacon
-    return bacon(autokey(vigenere(plaintext, key[0]), key[1]), key[2], ALPHABET)
+    return bacon(autokey(vigenere(plaintext, key[0]), key[0]), key[1], ALPHABET)
 
 
 def feistel_round_encrypt(left: bytes, right: bytes, key:str) -> bytes:
@@ -110,7 +110,7 @@ def feistel_round_decrypt(left: bytes, right: bytes, key:str) -> bytes:
     return lip, rip
 
 def apply_padding(data: bytes, block_size: int) -> bytes:
-    # PCKS 7
+    # PCKS
     padding_length = block_size - (len(data) % block_size)
     padding = bytes([padding_length] * padding_length)
     return  data + padding
@@ -120,7 +120,7 @@ def remove_padding(data: bytes) -> bytes:
     data = data[:-padding_length]
     return data
 
-def feistel_encrypt(message: str, key:str, rounds:int = 16, block_size: int = 16) -> bytes:
+def feistel_encrypt(message: str, key:str, rounds:int = 1, block_size: int = 16) -> bytes:
     message = apply_padding(bytearray(message, 'utf-8'), block_size)
     blocks = [message[i:i + block_size] for i in range(0, len(message), block_size)]
     res = bytearray()
@@ -136,7 +136,7 @@ def feistel_encrypt(message: str, key:str, rounds:int = 16, block_size: int = 16
 
     return res
 
-def feistel_decrypt(message: bytes, key:str , rounds:int = 16, block_size: int = 16) -> str:
+def feistel_decrypt(message: bytes, key:str , rounds:int = 1, block_size: int = 16) -> str:
     blocks = [message[i:i + block_size] for i in range(0, len(message), block_size)]
     res = bytearray()
 
@@ -164,10 +164,10 @@ def read_from_file_or_value(value):
         return value
 
 parser = argparse.ArgumentParser(description="Encrypt or Decrypt a message using Bacon, Vigenere and Autokey, providing a key and a secret message")
-parser.add_argument("--key", required=True, help="Encryption/Decryption key for Vigenere and Autokey, can be a value or a path to a file")
-parser.add_argument("--secret", required=True, help="Secret to be combined with the key for Bacon chipher, can be the value or a path to a file")
-parser.add_argument("--message", required=True, help="Path to file that contains the message")
-parser.add_argument("--mode", required=True, choices=['e', 'd'], help="Modes: 'e' for encryption, 'd' for decryption")
+parser.add_argument("-k", "--key", required=True, help="Encryption/Decryption key for Vigenere and Autokey, can be a value or a path to a file")
+parser.add_argument("-s", "--secret", required=True, help="Secret to be combined with the key for Bacon chipher, can be the value or a path to a file")
+parser.add_argument("-t", "--text", required=True, help="Text (hex value or plaintext), can be passed as a path to a file")
+parser.add_argument("-m", "--mode", required=True, choices=['e', 'd'], help="Modes: 'e' for encryption, 'd' for decryption")
 
 args = parser.parse_args()
 
@@ -177,13 +177,12 @@ key = read_from_file_or_value(args.key)
 secret = read_from_file_or_value(args.secret)
 
 #Read binary with mode is 'd' (decryption)
-message = read_from_file_or_value(args.message)
+message = read_from_file_or_value(args.text)
 
 #Generate autokey (don't want to change at each itaration of the feistel chain)
-autokey_key = key + message[len(key):]
 
 # Compose the key into a tuple for easier access
-key = (key, autokey_key, secret)
+key = (key, secret)
 
 
 if mode == 'e':

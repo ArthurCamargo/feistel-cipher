@@ -80,7 +80,7 @@ def vigenere(plaintext: bytes, key: str) -> bytes:
 
     return ciphertext
 
-def encryption(plaintext, key):
+def encryption(plaintext: bytes, key: str) -> bytes:
     # 3 types of keys, key for vigenere, key for autokey, key for bacon
     return bacon(autokey(vigenere(plaintext, key[0]), key[0]), key[1], ALPHABET)
 
@@ -120,7 +120,7 @@ def remove_padding(data: bytes) -> bytes:
     data = data[:-padding_length]
     return data
 
-def feistel_encrypt(message: str, key:str, rounds:int = 1, block_size: int = 16) -> bytes:
+def feistel_encrypt(message: str, key:str, rounds:int = 32, block_size: int = 16) -> bytes:
     message = apply_padding(bytearray(message, 'utf-8'), block_size)
     blocks = [message[i:i + block_size] for i in range(0, len(message), block_size)]
     res = bytearray()
@@ -136,7 +136,7 @@ def feistel_encrypt(message: str, key:str, rounds:int = 1, block_size: int = 16)
 
     return res
 
-def feistel_decrypt(message: bytes, key:str , rounds:int = 1, block_size: int = 16) -> str:
+def feistel_decrypt(message: bytes, key:str , rounds:int = 32, block_size: int = 16) -> str:
     blocks = [message[i:i + block_size] for i in range(0, len(message), block_size)]
     res = bytearray()
 
@@ -179,8 +179,6 @@ secret = read_from_file_or_value(args.secret)
 #Read binary with mode is 'd' (decryption)
 message = read_from_file_or_value(args.text)
 
-#Generate autokey (don't want to change at each itaration of the feistel chain)
-
 # Compose the key into a tuple for easier access
 key = (key, secret)
 
@@ -192,7 +190,6 @@ if mode == 'e':
 elif mode == 'd':
     decrypted = feistel_decrypt(bytearray.fromhex(message), key)
     print(decrypted)
-
 
 # Testings
 
